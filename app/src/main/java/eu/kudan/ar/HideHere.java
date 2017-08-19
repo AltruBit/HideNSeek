@@ -1,6 +1,8 @@
 package eu.kudan.ar;
 
+import android.app.job.JobInfo;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
@@ -207,6 +209,10 @@ public class HideHere extends ARActivity implements
         fireReference.child("Data").push().setValue(mData);
 
         Toast.makeText(getBaseContext(), "Hid an Avatar!", Toast.LENGTH_LONG).show();
+
+        JobInfo.Builder builder = new JobInfo.Builder(1, new ComponentName(getPackageName(), JobSchedulerService.class.getName()));
+        builder.setPeriodic(3000);
+        
 
         intentBundle.setUserName(this, GlobalMap.class, username);
     }
