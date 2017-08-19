@@ -3,7 +3,6 @@ package eu.kudan.ar;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
@@ -77,14 +76,10 @@ public class HideHere extends ARActivity implements
     protected void onResume() {
         super.onResume();
         mCurrentLocation.apiStart();
-        registerReceiver(broadcast, new IntentFilter(BackgroundTimer.COUNTDOWN_BR));
-        Log.i(TAG, "Registered broacast receiver");
     }
 
     protected void onPause() {
         super.onPause();
-        unregisterReceiver(broadcast);
-        Log.i(TAG, "Unregistered broacast receiver");
     }
 
     protected void onStop() {
@@ -100,7 +95,6 @@ public class HideHere extends ARActivity implements
 
     protected void onDestroy() {
         super.onDestroy();
-        stopService(new Intent(this, BackgroundTimer.class));
         Log.i(TAG, "Stopped service");
     }
 
@@ -213,9 +207,6 @@ public class HideHere extends ARActivity implements
         fireReference.child("Data").push().setValue(mData);
 
         Toast.makeText(getBaseContext(), "Hid an Avatar!", Toast.LENGTH_LONG).show();
-
-        startService(new Intent(this, BackgroundTimer.class));
-        Log.i(TAG, "Started service");
 
         intentBundle.setUserName(this, GlobalMap.class, username);
     }

@@ -64,8 +64,6 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_api_key_2" />
 
-        <service android:name=".BackgroundTimer" />
-
     </application>
 
 </manifest>
