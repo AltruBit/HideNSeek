@@ -1,8 +1,7 @@
 package eu.kudan.ar;
 
-import android.app.job.JobInfo;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
@@ -28,8 +27,6 @@ import eu.kudan.kudan.ARModelImporter;
 import eu.kudan.kudan.ARModelNode;
 import eu.kudan.kudan.ARTexture2D;
 
-import static android.content.ContentValues.TAG;
-
 public class HideHere extends ARActivity implements
         OnLocationChangedListener,
         View.OnClickListener {
@@ -39,6 +36,7 @@ public class HideHere extends ARActivity implements
     private DatabaseReference fireReference;
     private CurrentLocation mCurrentLocation;
     private IntentBundle intentBundle;
+    private PendingIntent pendingIntent;
     private ARModelNode modelNode;
 
     private String username;
@@ -54,6 +52,9 @@ public class HideHere extends ARActivity implements
         //Get data from GlobalMap.java
         intentBundle = new IntentBundle(getIntent());
         username = intentBundle.getUserName();
+
+        Intent alarmIntent = new Intent(HideHere.this, AlarmReceiver.class);
+        pendingIntent = pendingIntent.getBroadcast(HideHere.this, 0, alarmIntent, 0);
 
         //Setup connection to FireBase
         FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
@@ -85,19 +86,12 @@ public class HideHere extends ARActivity implements
     }
 
     protected void onStop() {
-        try {
-            unregisterReceiver(broadcast);
-        } catch (Exception e) {
-            // Receiver was probably already stopped in onPause()
-        }
-
         super.onStop();
         mCurrentLocation.apiStop();
     }
 
     protected void onDestroy() {
         super.onDestroy();
-        Log.i(TAG, "Stopped service");
     }
 
 
@@ -210,9 +204,10 @@ public class HideHere extends ARActivity implements
 
         Toast.makeText(getBaseContext(), "Hid an Avatar!", Toast.LENGTH_LONG).show();
 
-        JobInfo.Builder builder = new JobInfo.Builder(1, new ComponentName(getPackageName(), JobSchedulerService.class.getName()));
-        builder.setPeriodic(3000);
-        
+        AlarmManager manager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        int interval = 8000;
+
+        manager.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), interval, pendingIntent);
 
         intentBundle.setUserName(this, GlobalMap.class, username);
     }
@@ -223,19 +218,5 @@ public class HideHere extends ARActivity implements
         ARGyroPlaceManager.getInstance().deinitialise();
 
         intentBundle.setUserName(this, GlobalMap.class, username);
-    }
-
-    private BroadcastReceiver broadcast = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            updateGUI(intent);
-        }
-    };
-
-    private void updateGUI(Intent intent) {
-        if (intent.getExtras() != null) {
-            long millisUntilFinished = intent.getLongExtra("countdown", 0);
-            Log.i(TAG, "Countdown seconds remaining: " + millisUntilFinished / 1000);
-        }
     }
 }
