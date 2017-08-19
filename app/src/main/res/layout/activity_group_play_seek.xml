@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_group_play_seek"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="eu.kudan.ar.GroupPlaySeek">
+
+    <TextView
+        android:id="@+id/Timer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:layout_centerHorizontal="true"
+        android:text="@string/timerOn"
+        android:textSize="32sp"
+        android:textColor="@color/black">
+    </TextView>
+
+    <TextView
+        android:id="@+id/pointTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/Timer"
+        android:layout_marginTop="12dp"
+        android:layout_centerHorizontal="true"
+        android:text="@string/points"
+        android:textSize="32sp"
+        android:textColor="@color/black"
+        >
+    </TextView>
+
+    <TextView
+        android:id="@+id/pointsAmount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/pointTitle"
+        android:layout_toEndOf="@+id/pointTitle"
+        android:layout_alignBottom="@id/pointTitle"
+        android:text="@string/zero"
+        android:textSize="32sp"
+        android:textColor="@color/black">
+    </TextView>
+
+    <Button
+        android:id="@+id/search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:text="@string/bSearch"
+        android:textSize="28sp"
+        android:textColor="@color/black">
+    </Button>
+
+    <fragment
+        android:id="@+id/seekMap"
+        android:name="com.google.android.gms.maps.MapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/pointTitle"
+        android:layout_above="@id/bottomButtons">
+    </fragment>
+
+
+</RelativeLayout>
