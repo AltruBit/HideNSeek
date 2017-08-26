@@ -36,7 +36,6 @@ public class HideHere extends ARActivity implements
     private DatabaseReference fireReference;
     private CurrentLocation mCurrentLocation;
     private IntentBundle intentBundle;
-    private PendingIntent pendingIntent;
     private ARModelNode modelNode;
 
     private String username;
@@ -52,9 +51,6 @@ public class HideHere extends ARActivity implements
         //Get data from GlobalMap.java
         intentBundle = new IntentBundle(getIntent());
         username = intentBundle.getUserName();
-
-        Intent alarmIntent = new Intent(HideHere.this, AlarmReceiver.class);
-        pendingIntent = pendingIntent.getBroadcast(HideHere.this, 0, alarmIntent, 0);
 
         //Setup connection to FireBase
         FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
@@ -198,16 +194,25 @@ public class HideHere extends ARActivity implements
         Vector3f scale = gyroPlaceManager.getWorld().getScale();
         Quaternion orientation = gyroPlaceManager.getWorld().getOrientation();
 
+        long currentMillis = System.currentTimeMillis();
+
         //Add current coordinates to fireBase
-        Data mData = new Data(latitude, longitude, position, scale, orientation);
-        fireReference.child("Data").push().setValue(mData);
+        final Data mData = new Data(latitude, longitude, position, scale, orientation);
+        fireReference.child(String.valueOf(currentMillis)).setValue(mData);
+
 
         Toast.makeText(getBaseContext(), "Hid an Avatar!", Toast.LENGTH_LONG).show();
 
-        AlarmManager manager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        int interval = 8000;
+        final Intent alarmIntent = new Intent(HideHere.this, AlarmReceiver.class);
+        alarmIntent.putExtra("username", username);
+        alarmIntent.putExtra("millis", currentMillis);
+        alarmIntent.putExtra("points", 0);
 
-        manager.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), interval, pendingIntent);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(HideHere.this, (int) currentMillis, alarmIntent, 0);
+
+        AlarmManager manager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+
+        manager.setExact(AlarmManager.RTC_WAKEUP, currentMillis + 60000, pendingIntent);
 
         intentBundle.setUserName(this, GlobalMap.class, username);
     }

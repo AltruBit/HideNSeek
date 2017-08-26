@@ -62,7 +62,8 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
 
             @Override
             public void onChildRemoved(DataSnapshot dataSnapshot) {
-                Toast.makeText(getBaseContext(), "Someone found your Avatar!", Toast.LENGTH_SHORT).show();
+
+                Toast.makeText(getBaseContext(), "You got one Avatar back!", Toast.LENGTH_SHORT).show();
 
                 hiddenAmount--;
                 freeAmount++;
@@ -136,7 +137,7 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
     //Setup FireBase connection
     private void fireBaseSetup() {
 
-        FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
+        final FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
         fireReference = fireDatabase.getReference("World").child(username);
 
         //Get data once
@@ -145,10 +146,15 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
             public void onDataChange(DataSnapshot dataSnapshot) {
 
                 //Get number of hidden avatars
-                hiddenAmount = (int) dataSnapshot.child("Data").getChildrenCount();
+                hiddenAmount = (int) dataSnapshot.getChildrenCount();
                 freeAmount = MAX_AVATAR_AMOUNT - hiddenAmount;
 
                 Long points = (Long) dataSnapshot.child("Points").getValue();
+
+                if (points == null) {
+                    fireReference.child("Points").setValue(0);
+                    points = Long.valueOf("0");
+                }
 
                 //Set number of points
                 point_amount.setText(String.valueOf(points));

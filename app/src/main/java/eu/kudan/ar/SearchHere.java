@@ -81,10 +81,9 @@ public class SearchHere extends ARActivity implements
 
         //Kudan API Key
         ARAPIKey key = ARAPIKey.getInstance();
-        key.setAPIKey("sVmoznmKZ+4nFEHD6HoslwpC26PNuBZGHrikUwyon2BKSvza1yu2CqbSrae+pHPr1NHjhsf5pHQOZn8IEqXlqXFodGsrOJhxJANbMOdvnRLUi9/QWGqyRL9FViDmyohw6e5R7U4Ex8H7d7spLLvhfp5HFv56DgLr8c8sC2ipDtv9g1IjOTaY7UGxata3eulG2A/UkIdRv2NcotZXqan01xQUWFAislEwlGguParEYiwu11T4mqtU3dQBbfxpvxbczjdYz493YG3rAO2RHgT+5M5TJShJsz2irkNo71JD2Fzqf4AR2b4+7t1c55zKjegXzGS6Xa/rpNn9yiXUn7rUYIHNvN3cEQa9HsZiVxAV4vJgxFS+T/AxfWqKrEg1uj6xF5MsodZ2EkZ8mqliYIsxZqnFz+Re2HeWG8wvrEob0ZwRIO0TxppAemZc3HChTAPLcNt5gzeBk0oRP4wnrFAFFBDi8XjDocwTSVw++hWZb1qNHzt6bKLsMDRT057UVuuZB6M8f7EOQD79Oah0Vrx/3DUK6e9BEV8oGFNHtk1wyYEkg0i6RLhVSokGx//Qj36A4gCz3h1OjtfB0OuukbNq7xI1L/FcNQLmGYNGZwszARjGr9ESw1gVAkbQMxaV27uo/KoIq4+nR7RL8iT7t7NAaXCFIi24RR+7WGjTvKqWYjA=");
+        key.setAPIKey(String.valueOf(R.string.kudan_api_key));
 
         layoutSetup();
-
 
         countDownTimer = new CountDownTimer(30000, 1000) {
 
@@ -285,28 +284,29 @@ public class SearchHere extends ARActivity implements
 
                     //Skip own username
                     if (!storeSnap.getKey().equals(username)) {
-                        for (DataSnapshot dataSnap : storeSnap.child("Data").getChildren()) {
-                            Log.d(debug,"Searching user:" + storeSnap.getKey());
+                        for (DataSnapshot dataSnap : storeSnap.getChildren()) {
+                            if (dataSnap.getKey().equals("Points")) {
+                                Log.d(debug, "Searching user:" + storeSnap.getKey());
 
-                            fireData = dataSnap.getValue(Data.class);
+                                fireData = dataSnap.getValue(Data.class);
 
-                            double markerX = fireData.getLatitude();
-                            double markerY = fireData.getLongitude();
+                                 double markerX = fireData.getLatitude();
+                                double markerY = fireData.getLongitude();
 
-                            Location.distanceBetween(latitude, longitude, markerX, markerY, distance);
+                                 Location.distanceBetween(latitude, longitude, markerX, markerY, distance);
 
-                            if (distance[0] < circle.getRadius()) {
-                                Toast.makeText(getBaseContext(), "Someone is around this area!", Toast.LENGTH_SHORT).show();
+                                 if (distance[0] < circle.getRadius()) {
+                                     Toast.makeText(getBaseContext(), "Someone is around this area!", Toast.LENGTH_SHORT).show();
 
-                                toRemove = dataSnap;
-                                position = fireData.getPosition();
-                                orientation = fireData.getOrientation();
+                                     toRemove = dataSnap;
+                                     position = fireData.getPosition();
+                                     orientation = fireData.getOrientation();
 
-                                setupARAbiTrack();
-                                startAR();
+                                     setupARAbiTrack();
+                                     startAR();
+                                 } else
+                                     Toast.makeText(getBaseContext(), "No one around here!", Toast.LENGTH_SHORT).show();
                             }
-                            else
-                                Toast.makeText(getBaseContext(), "No one around here!", Toast.LENGTH_SHORT).show();
                         }
                     }
                     else {

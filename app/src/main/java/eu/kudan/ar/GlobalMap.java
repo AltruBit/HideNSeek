@@ -80,7 +80,7 @@ public class GlobalMap extends FragmentActivity implements
 
             @Override
             public void onChildRemoved(DataSnapshot dataSnapshot) {
-                Toast.makeText(getBaseContext(), "Someone found your Avatar!", Toast.LENGTH_LONG).show();
+                Toast.makeText(getBaseContext(), "You have an avatar back!", Toast.LENGTH_LONG).show();
 
                 hiddenAmount--;
                 freeAmount++;
