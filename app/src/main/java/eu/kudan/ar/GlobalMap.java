@@ -181,7 +181,7 @@ public class GlobalMap extends FragmentActivity implements
     private void fireBaseSetup() {
 
         FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
-        fireReference = fireDatabase.getReference("World").child(username).child("Data");
+        fireReference = fireDatabase.getReference("World").child(username).child("Hiding Locations");
 
         //Get data once
         fireReference.addListenerForSingleValueEvent(new ValueEventListener() {

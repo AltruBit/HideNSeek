@@ -146,7 +146,7 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
             public void onDataChange(DataSnapshot dataSnapshot) {
 
                 //Get number of hidden avatars
-                hiddenAmount = (int) dataSnapshot.getChildrenCount();
+                hiddenAmount = (int) dataSnapshot.child("Hiding Locations").getChildrenCount();
                 freeAmount = MAX_AVATAR_AMOUNT - hiddenAmount;
 
                 Long points = (Long) dataSnapshot.child("Points").getValue();

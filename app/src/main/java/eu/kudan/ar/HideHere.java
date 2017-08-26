@@ -198,21 +198,19 @@ public class HideHere extends ARActivity implements
 
         //Add current coordinates to fireBase
         final Data mData = new Data(latitude, longitude, position, scale, orientation);
-        fireReference.child(String.valueOf(currentMillis)).setValue(mData);
-
+        fireReference.child("Hiding Locations").child(String.valueOf(currentMillis)).setValue(mData);
 
         Toast.makeText(getBaseContext(), "Hid an Avatar!", Toast.LENGTH_LONG).show();
 
         final Intent alarmIntent = new Intent(HideHere.this, AlarmReceiver.class);
         alarmIntent.putExtra("username", username);
         alarmIntent.putExtra("millis", currentMillis);
-        alarmIntent.putExtra("points", 0);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(HideHere.this, (int) currentMillis, alarmIntent, 0);
 
         AlarmManager manager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 
-        manager.setExact(AlarmManager.RTC_WAKEUP, currentMillis + 60000, pendingIntent);
+        manager.setExact(AlarmManager.RTC_WAKEUP, currentMillis + 30000, pendingIntent);
 
         intentBundle.setUserName(this, GlobalMap.class, username);
     }

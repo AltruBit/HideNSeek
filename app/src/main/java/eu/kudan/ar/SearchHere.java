@@ -284,8 +284,7 @@ public class SearchHere extends ARActivity implements
 
                     //Skip own username
                     if (!storeSnap.getKey().equals(username)) {
-                        for (DataSnapshot dataSnap : storeSnap.getChildren()) {
-                            if (dataSnap.getKey().equals("Points")) {
+                        for (DataSnapshot dataSnap : storeSnap.child("Hiding Locations").getChildren()) {
                                 Log.d(debug, "Searching user:" + storeSnap.getKey());
 
                                 fireData = dataSnap.getValue(Data.class);
@@ -306,7 +305,6 @@ public class SearchHere extends ARActivity implements
                                      startAR();
                                  } else
                                      Toast.makeText(getBaseContext(), "No one around here!", Toast.LENGTH_SHORT).show();
-                            }
                         }
                     }
                     else {
