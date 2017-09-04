@@ -11,6 +11,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.jme3.math.Quaternion;
@@ -37,8 +39,7 @@ public class HideHere extends ARActivity implements
     private CurrentLocation mCurrentLocation;
     private IntentBundle intentBundle;
     private ARModelNode modelNode;
-
-    private String username;
+    private FirebaseUser currentUser;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -50,11 +51,13 @@ public class HideHere extends ARActivity implements
 
         //Get data from GlobalMap.java
         intentBundle = new IntentBundle(getIntent());
-        username = intentBundle.getUserName();
+
+        FirebaseAuth authentication = FirebaseAuth.getInstance();
+        currentUser = authentication.getCurrentUser();
 
         //Setup connection to FireBase
         FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
-        fireReference = fireDatabase.getReference("World").child(username);
+        fireReference = fireDatabase.getReference("World").child(String.valueOf(currentUser));
 
         //Kudan API key
         ARAPIKey key = ARAPIKey.getInstance();
@@ -203,7 +206,7 @@ public class HideHere extends ARActivity implements
         Toast.makeText(getBaseContext(), "Hid an Avatar!", Toast.LENGTH_LONG).show();
 
         final Intent alarmIntent = new Intent(HideHere.this, AlarmReceiver.class);
-        alarmIntent.putExtra("username", username);
+        alarmIntent.putExtra("username", String.valueOf(currentUser));
         alarmIntent.putExtra("millis", currentMillis);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(HideHere.this, (int) currentMillis, alarmIntent, 0);
@@ -212,7 +215,7 @@ public class HideHere extends ARActivity implements
 
         manager.setExact(AlarmManager.RTC_WAKEUP, currentMillis + 30000, pendingIntent);
 
-        intentBundle.setUserName(this, GlobalMap.class, username);
+        intentBundle.setIntent(this, GlobalMap.class);
     }
 
     //Stop Tracking and remove data
@@ -220,6 +223,6 @@ public class HideHere extends ARActivity implements
         ARArbiTrack.getInstance().deinitialise();
         ARGyroPlaceManager.getInstance().deinitialise();
 
-        intentBundle.setUserName(this, GlobalMap.class, username);
+        intentBundle.setIntent(this, GlobalMap.class);
     }
 }

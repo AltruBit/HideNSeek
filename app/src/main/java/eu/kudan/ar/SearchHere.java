@@ -15,6 +15,8 @@ import android.widget.Toast;
 
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -51,10 +53,10 @@ public class SearchHere extends ARActivity implements
     private CircleOptions circle;
     private Vector3f position;
     private Data fireData;
+    private FirebaseUser currentUser;
 
     private TextView timer;
 
-    private String username;
     private Long points;
 
 
@@ -73,7 +75,9 @@ public class SearchHere extends ARActivity implements
 
         //Get data from GlobalMap.java
         intentBundle = new IntentBundle(getIntent());
-        username = intentBundle.getUserName();
+
+        FirebaseAuth authentication = FirebaseAuth.getInstance();
+        currentUser = authentication.getCurrentUser();
 
         //Setup connection to FireBase
         FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
@@ -99,7 +103,7 @@ public class SearchHere extends ARActivity implements
             @Override
             public void onFinish() {
                 Toast.makeText(getBaseContext(), "Time is up!", Toast.LENGTH_SHORT).show();
-                intentBundle.setUserName(SearchHere.this, GlobalMap.class, username);
+                intentBundle.setIntent(SearchHere.this, GlobalMap.class);
             }
         }.start();
 
@@ -147,7 +151,7 @@ public class SearchHere extends ARActivity implements
         if (i == R.id.clickSearch)
             search();
         else if (i == R.id.backToMap)
-            intentBundle.setUserName(this, GlobalMap.class, username);
+            intentBundle.setIntent(this, GlobalMap.class);
     }
 
     @Override
@@ -178,9 +182,9 @@ public class SearchHere extends ARActivity implements
         {
             arArbiTrack.stop();
             points += 100;
-            fireReference.child(username).child("Points").setValue(points);
+            fireReference.child(String.valueOf(currentUser)).child("Points").setValue(points);
             toRemove.getRef().removeValue();
-            intentBundle.setUserName(this, GlobalMap.class, username);
+            intentBundle.setIntent(this, GlobalMap.class);
         }
         return false;
     }
@@ -283,7 +287,7 @@ public class SearchHere extends ARActivity implements
                 for (DataSnapshot storeSnap : dataSnapshot.getChildren()) {
 
                     //Skip own username
-                    if (!storeSnap.getKey().equals(username)) {
+                    if (!storeSnap.getKey().equals(currentUser)) {
                         for (DataSnapshot dataSnap : storeSnap.child("Hiding Locations").getChildren()) {
                                 Log.d(debug, "Searching user:" + storeSnap.getKey());
 

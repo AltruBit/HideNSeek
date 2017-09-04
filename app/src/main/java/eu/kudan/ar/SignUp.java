@@ -3,6 +3,7 @@ package eu.kudan.ar;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
@@ -31,16 +32,16 @@ import com.google.firebase.database.ValueEventListener;
 
 public class SignUp extends AppCompatActivity implements View.OnClickListener {
 
-    private static final String TAG = "EmailPassword";
+    private static final String TAG = "SignUpDebug";
 
     private TextView mStatusTextView;
     private TextView mDetailTextView;
     private EditText mEmailField;
     private EditText mPasswordField;
 
-    // [START declare_auth]
-    private FirebaseAuth mAuth;
-    // [END declare_auth]
+    private FirebaseAuth authentication;
+
+    private IntentBundle intentBundle;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -57,22 +58,48 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
         findViewById(R.id.email_sign_in_button).setOnClickListener(this);
         findViewById(R.id.email_create_account_button).setOnClickListener(this);
         findViewById(R.id.sign_out_button).setOnClickListener(this);
-        findViewById(R.id.verify_email_button).setOnClickListener(this);
 
-        // [START initialize_auth]
-        mAuth = FirebaseAuth.getInstance();
-        // [END initialize_auth]
+        authentication = FirebaseAuth.getInstance();
+
+        //Connect to FireBase
+        FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
+        DatabaseReference fireReference = fireDatabase.getReference();
+
+        permissionsRequest();
     }
 
-    // [START on_start_check_user]
     @Override
     public void onStart() {
         super.onStart();
         // Check if user is signed in (non-null) and update UI accordingly.
-        FirebaseUser currentUser = mAuth.getCurrentUser();
+        FirebaseUser currentUser = authentication.getCurrentUser();
         updateUI(currentUser);
     }
-    // [END on_start_check_user]
+
+    @Override
+    public void onClick(View v) {
+        int i = v.getId();
+        if (i == R.id.email_create_account_button) {
+            createAccount(mEmailField.getText().toString(), mPasswordField.getText().toString());
+        } else if (i == R.id.email_sign_in_button) {
+            signIn(mEmailField.getText().toString(), mPasswordField.getText().toString());
+        } else if (i == R.id.sign_out_button) {
+            signOut();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case 111: {
+                if (grantResults.length > 0 && grantResults[0]== PackageManager.PERMISSION_GRANTED ) {
+                    Log.d(TAG, "Permission already granted");
+                } else {
+                    permissionsNotSelected();
+                }
+            }
+        }
+    }
 
     private void createAccount(String email, String password) {
         Log.d(TAG, "createAccount:" + email);
@@ -80,17 +107,14 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
             return;
         }
 
-        //showProgressDialog();
-
-        // [START create_user_with_email]
-        mAuth.createUserWithEmailAndPassword(email, password)
+        authentication.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
                             // Sign in success, update UI with the signed-in user's information
                             Log.d(TAG, "createUserWithEmail:success");
-                            FirebaseUser user = mAuth.getCurrentUser();
+                            FirebaseUser user = authentication.getCurrentUser();
                             updateUI(user);
                         } else {
                             // If sign in fails, display a message to the user.
@@ -99,13 +123,14 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
                                     Toast.LENGTH_SHORT).show();
                             updateUI(null);
                         }
-
-                        // [START_EXCLUDE]
-                        //hideProgressDialog();
-                        // [END_EXCLUDE]
                     }
                 });
-        // [END create_user_with_email]
+
+        Log.d(TAG, String.valueOf(authentication));
+
+
+        Intent intent = new Intent(this, HomePage.class);
+        this.startActivity(intent);
     }
 
     private void signIn(String email, String password) {
@@ -114,17 +139,14 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
             return;
         }
 
-        //showProgressDialog();
-
-        // [START sign_in_with_email]
-        mAuth.signInWithEmailAndPassword(email, password)
+        authentication.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
                             // Sign in success, update UI with the signed-in user's information
                             Log.d(TAG, "signInWithEmail:success");
-                            FirebaseUser user = mAuth.getCurrentUser();
+                            FirebaseUser user = authentication.getCurrentUser();
                             updateUI(user);
                         } else {
                             // If sign in fails, display a message to the user.
@@ -142,43 +164,15 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
                         // [END_EXCLUDE]
                     }
                 });
-        // [END sign_in_with_email]
+
+        Intent intent = new Intent(this, HomePage.class);
+        this.startActivity(intent);
+
     }
 
     private void signOut() {
-        mAuth.signOut();
+        authentication.signOut();
         updateUI(null);
-    }
-
-    private void sendEmailVerification() {
-        // Disable button
-        findViewById(R.id.verify_email_button).setEnabled(false);
-
-        // Send verification email
-        // [START send_email_verification]
-        final FirebaseUser user = mAuth.getCurrentUser();
-        user.sendEmailVerification()
-                .addOnCompleteListener(this, new OnCompleteListener<Void>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-                        // [START_EXCLUDE]
-                        // Re-enable button
-                        findViewById(R.id.verify_email_button).setEnabled(true);
-
-                        if (task.isSuccessful()) {
-                            Toast.makeText(SignUp.this,
-                                    "Verification email sent to " + user.getEmail(),
-                                    Toast.LENGTH_SHORT).show();
-                        } else {
-                            Log.e(TAG, "sendEmailVerification", task.getException());
-                            Toast.makeText(SignUp.this,
-                                    "Failed to send verification email.",
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                        // [END_EXCLUDE]
-                    }
-                });
-        // [END send_email_verification]
     }
 
     private boolean validateForm() {
@@ -225,17 +219,30 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
         }
     }
 
-    @Override
-    public void onClick(View v) {
-        int i = v.getId();
-        if (i == R.id.email_create_account_button) {
-            createAccount(mEmailField.getText().toString(), mPasswordField.getText().toString());
-        } else if (i == R.id.email_sign_in_button) {
-            signIn(mEmailField.getText().toString(), mPasswordField.getText().toString());
-        } else if (i == R.id.sign_out_button) {
-            signOut();
-        } else if (i == R.id.verify_email_button) {
-            sendEmailVerification();
+    //Request permissions
+    public void permissionsRequest() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{
+                    Manifest.permission.INTERNET, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.CAMERA, Manifest.permission.ACCESS_FINE_LOCATION}, 111);
         }
+    }
+
+    //Ask user to give permission for ones that were denied
+    private void permissionsNotSelected() {
+        AlertDialog.Builder builder = new AlertDialog.Builder (this);
+        builder.setTitle("Permissions Required");
+        builder.setMessage("Please enable the requested permissions in the app settings in order to use this demo app");
+        builder.setNeutralButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                dialog.cancel();
+                System.exit(1);
+            }
+        });
+        AlertDialog noInternet = builder.create();
+        noInternet.show();
     }
 }

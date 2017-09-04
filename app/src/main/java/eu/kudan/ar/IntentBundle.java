@@ -11,13 +11,12 @@ class IntentBundle extends Intent {
         mIntent = intent;
     }
 
-    String getUserName() {
-        return mIntent.getStringExtra("username");
+    Intent getIntent() {
+        return mIntent;
     }
 
-    void setUserName(Context context, Class<?> cls, String username) {
+    void setIntent(Context context, Class<?> cls) {
         Intent intent = new Intent(context, cls);
-        intent.putExtra("username", username);
         context.startActivity(intent);
     }
 }

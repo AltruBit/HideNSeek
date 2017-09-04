@@ -42,7 +42,6 @@ public class LocalSetup extends AppCompatActivity implements
         mCurrentLocation = new CurrentLocation(this, this, this);
 
         intentBundle = new IntentBundle(getIntent());
-        username = intentBundle.getUserName();
 
         //Connect to FireBase
         FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();

@@ -8,6 +8,8 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -22,12 +24,13 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
 
     private DatabaseReference fireReference;
     private IntentBundle intentBundle;
+    private FirebaseAuth authentication;
+    private FirebaseUser currentUser;
 
     private TextView free_amount;
     private TextView hidden_amount;
     private TextView point_amount;
 
-    private String username;
     private int freeAmount;
     private int hiddenAmount;
 
@@ -38,7 +41,14 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
 
         //Get data from SignUp.java
         intentBundle = new IntentBundle(getIntent());
-        username = intentBundle.getUserName();
+
+        authentication = FirebaseAuth.getInstance();
+        currentUser = authentication.getCurrentUser();
+
+        Log.d(debug, String.valueOf(authentication));
+        Log.d(debug, String.valueOf(currentUser));
+
+        Log.d(debug, currentUser.getEmail());
 
         fireBaseSetup();
         layoutSetup();
@@ -111,9 +121,9 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
         int i = v.getId();
 
         if (i == R.id.bGlobalPlay)
-            intentBundle.setUserName(this, GlobalMap.class, username);
+            intentBundle.setIntent(this, GlobalMap.class);
         else if (i == R.id.bLocalPlay)
-            intentBundle.setUserName(this, LocalSetup.class, username);
+            intentBundle.setIntent(this, LocalSetup.class);
     }
 
     /******************** Custom Functions ********************/
@@ -129,7 +139,7 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
         free_amount = (TextView) findViewById(R.id.amountFree);
         hidden_amount = (TextView) findViewById(R.id.amountHidden);
 
-        user_name.setText(username);
+        user_name.setText(currentUser.getEmail());
         goToWorld.setOnClickListener(this);
         goToGroup.setOnClickListener(this);
     }
@@ -138,7 +148,7 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
     private void fireBaseSetup() {
 
         final FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
-        fireReference = fireDatabase.getReference("World").child(username);
+        fireReference = fireDatabase.getReference("World").child(currentUser.getEmail());
 
         //Get data once
         fireReference.addListenerForSingleValueEvent(new ValueEventListener() {
