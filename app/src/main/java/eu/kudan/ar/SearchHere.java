@@ -1,5 +1,6 @@
 package eu.kudan.ar;
 
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.location.Location;
 import android.os.Bundle;
@@ -46,7 +47,6 @@ public class SearchHere extends ARActivity implements
     private GestureDetectorCompat gestureDetect;
     private CurrentLocation mCurrentLocation;
     private DatabaseReference fireReference;
-    private IntentBundle intentBundle;
     private Quaternion orientation;
     private ARModelNode modelNode;
     private DataSnapshot toRemove;
@@ -54,6 +54,7 @@ public class SearchHere extends ARActivity implements
     private Vector3f position;
     private Data fireData;
     private FirebaseUser currentUser;
+    private FirebaseAuth authentication;
 
     private TextView timer;
 
@@ -73,21 +74,11 @@ public class SearchHere extends ARActivity implements
 
         gestureDetect = new GestureDetectorCompat(this, this);
 
-        //Get data from GlobalMap.java
-        intentBundle = new IntentBundle(getIntent());
-
-        FirebaseAuth authentication = FirebaseAuth.getInstance();
-        currentUser = authentication.getCurrentUser();
-
-        //Setup connection to FireBase
-        FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
-        fireReference = fireDatabase.getReference("World");
+        authentication = FirebaseAuth.getInstance();
 
         //Kudan API Key
         ARAPIKey key = ARAPIKey.getInstance();
         key.setAPIKey(String.valueOf(R.string.kudan_api_key));
-
-        layoutSetup();
 
         countDownTimer = new CountDownTimer(30000, 1000) {
 
@@ -103,7 +94,8 @@ public class SearchHere extends ARActivity implements
             @Override
             public void onFinish() {
                 Toast.makeText(getBaseContext(), "Time is up!", Toast.LENGTH_SHORT).show();
-                intentBundle.setIntent(SearchHere.this, GlobalMap.class);
+                Intent intent = new Intent(SearchHere.this, GlobalMap.class);
+                startActivity(intent);
             }
         }.start();
 
@@ -112,6 +104,14 @@ public class SearchHere extends ARActivity implements
     protected void onStart() {
         super.onStart();
         mCurrentLocation.apiStart();
+
+        currentUser = authentication.getCurrentUser();
+
+        //Setup connection to FireBase
+        FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
+        fireReference = fireDatabase.getReference("World");
+
+        layoutSetup();
     }
 
     protected void onRestart() {
@@ -150,8 +150,10 @@ public class SearchHere extends ARActivity implements
 
         if (i == R.id.clickSearch)
             search();
-        else if (i == R.id.backToMap)
-            intentBundle.setIntent(this, GlobalMap.class);
+        else if (i == R.id.backToMap) {
+            Intent intent = new Intent(this, GlobalMap.class);
+            this.startActivity(intent);
+        }
     }
 
     @Override
@@ -182,9 +184,11 @@ public class SearchHere extends ARActivity implements
         {
             arArbiTrack.stop();
             points += 100;
-            fireReference.child(String.valueOf(currentUser)).child("Points").setValue(points);
+            fireReference.child(String.valueOf(currentUser.getUid())).child("Points").setValue(points);
             toRemove.getRef().removeValue();
-            intentBundle.setIntent(this, GlobalMap.class);
+
+            Intent intent = new Intent(this, GlobalMap.class);
+            this.startActivity(intent);
         }
         return false;
     }
@@ -287,7 +291,7 @@ public class SearchHere extends ARActivity implements
                 for (DataSnapshot storeSnap : dataSnapshot.getChildren()) {
 
                     //Skip own username
-                    if (!storeSnap.getKey().equals(currentUser)) {
+                    if (!storeSnap.getKey().equals(currentUser.getUid())) {
                         for (DataSnapshot dataSnap : storeSnap.child("Hiding Locations").getChildren()) {
                                 Log.d(debug, "Searching user:" + storeSnap.getKey());
 

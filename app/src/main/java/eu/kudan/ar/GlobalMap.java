@@ -14,6 +14,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
@@ -37,7 +38,6 @@ public class GlobalMap extends FragmentActivity implements
     private DatabaseReference fireReference;
     FirebaseUser currentUser;
     private CurrentLocation mCurrentLocation;
-    private IntentBundle intentBundle;
 
     private GoogleMap mGoogleMap;
 
@@ -47,6 +47,7 @@ public class GlobalMap extends FragmentActivity implements
 
     private int hiddenAmount;
     private int freeAmount;
+    private FirebaseAuth authentication;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,16 +57,17 @@ public class GlobalMap extends FragmentActivity implements
         mCurrentLocation = new CurrentLocation(this, this, this);
         mCurrentLocation.apiBuild();
 
-        FirebaseAuth authentication = FirebaseAuth.getInstance();
-        currentUser = authentication.getCurrentUser();
-
-        fireBaseSetup();
-        layoutSetup();
+        authentication = FirebaseAuth.getInstance();
     }
 
     protected void onStart() {
         super.onStart();
         mCurrentLocation.apiStart();
+
+        currentUser = authentication.getCurrentUser();
+
+        fireBaseSetup();
+        layoutSetup();
 
         //Update data if someone found avatar
         fireReference.addChildEventListener(new ChildEventListener() {
@@ -183,7 +185,7 @@ public class GlobalMap extends FragmentActivity implements
     private void fireBaseSetup() {
 
         FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
-        fireReference = fireDatabase.getReference("World").child(String.valueOf(currentUser)).child("Hiding Locations");
+        fireReference = fireDatabase.getReference("World").child(String.valueOf(currentUser.getUid())).child("Hiding Locations");
 
         //Get data once
         fireReference.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -209,8 +211,10 @@ public class GlobalMap extends FragmentActivity implements
     private void searchHere() {
         if (Integer.parseInt(t_hidden_amount.getText() + "") == 0)
             Toast.makeText(getBaseContext(), "Need to have at least one Avatar hidden on map!", Toast.LENGTH_LONG).show();
-        else
-            intentBundle.setIntent(this, SearchHere.class);
+        else {
+            Intent intent = new Intent(this, SearchHere.class);
+            this.startActivity(intent);
+        }
     }
 
     //Hide in this area, if user has avatars to hide
@@ -219,7 +223,9 @@ public class GlobalMap extends FragmentActivity implements
             Toast.makeText(getBaseContext(), "No Avatars to hide!", Toast.LENGTH_SHORT).show();
             b_hide_avatar.setEnabled(false);
         }
-        else
-            intentBundle.setIntent(this, HideHere.class);
+        else {
+            Intent intent = new Intent(this, HideHere.class);
+            this.startActivity(intent);
+        }
     }
 }

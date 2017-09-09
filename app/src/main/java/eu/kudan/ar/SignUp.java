@@ -4,7 +4,6 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -14,7 +13,6 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,15 +22,10 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 
 public class SignUp extends AppCompatActivity implements View.OnClickListener {
 
-    private static final String TAG = "SignUpDebug";
+    private static final String TAG = "SignUpTAG ";
 
     private TextView mStatusTextView;
     private TextView mDetailTextView;
@@ -40,8 +33,6 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
     private EditText mPasswordField;
 
     private FirebaseAuth authentication;
-
-    private IntentBundle intentBundle;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -60,10 +51,6 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
         findViewById(R.id.sign_out_button).setOnClickListener(this);
 
         authentication = FirebaseAuth.getInstance();
-
-        //Connect to FireBase
-        FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
-        DatabaseReference fireReference = fireDatabase.getReference();
 
         permissionsRequest();
     }
@@ -115,7 +102,14 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
                             // Sign in success, update UI with the signed-in user's information
                             Log.d(TAG, "createUserWithEmail:success");
                             FirebaseUser user = authentication.getCurrentUser();
-                            updateUI(user);
+
+                            if (user != null) {
+                                Intent intent = new Intent(SignUp.this, HomePage.class);
+                                startActivity(intent);
+                            }
+                            else {
+                                Log.d(TAG, "User not signed in!");
+                            }
                         } else {
                             // If sign in fails, display a message to the user.
                             Log.w(TAG, "createUserWithEmail:failure", task.getException());
@@ -125,12 +119,6 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
                         }
                     }
                 });
-
-        Log.d(TAG, String.valueOf(authentication));
-
-
-        Intent intent = new Intent(this, HomePage.class);
-        this.startActivity(intent);
     }
 
     private void signIn(String email, String password) {
@@ -147,7 +135,13 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
                             // Sign in success, update UI with the signed-in user's information
                             Log.d(TAG, "signInWithEmail:success");
                             FirebaseUser user = authentication.getCurrentUser();
-                            updateUI(user);
+
+                            if (user != null) {
+                                Intent intent = new Intent(SignUp.this, HomePage.class);
+                                startActivity(intent);
+                            }
+                            else
+                                Log.d(TAG, "User not signed in!");
                         } else {
                             // If sign in fails, display a message to the user.
                             Log.w(TAG, "signInWithEmail:failure", task.getException());
@@ -164,10 +158,6 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
                         // [END_EXCLUDE]
                     }
                 });
-
-        Intent intent = new Intent(this, HomePage.class);
-        this.startActivity(intent);
-
     }
 
     private void signOut() {
@@ -200,15 +190,8 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
     private void updateUI(FirebaseUser user) {
         //hideProgressDialog();
         if (user != null) {
-            mStatusTextView.setText(getString(R.string.emailpassword_status_fmt,
-                    user.getEmail(), user.isEmailVerified()));
-            mDetailTextView.setText(getString(R.string.firebase_status_fmt, user.getUid()));
-
-            findViewById(R.id.email_password_buttons).setVisibility(View.GONE);
-            findViewById(R.id.email_password_fields).setVisibility(View.GONE);
-            findViewById(R.id.signed_in_buttons).setVisibility(View.VISIBLE);
-
-            findViewById(R.id.verify_email_button).setEnabled(!user.isEmailVerified());
+            Intent intent = new Intent(this, HomePage.class);
+            this.startActivity(intent);
         } else {
             mStatusTextView.setText(R.string.signed_out);
             mDetailTextView.setText(null);

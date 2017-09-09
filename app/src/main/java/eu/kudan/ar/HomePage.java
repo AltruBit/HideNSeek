@@ -1,5 +1,6 @@
 package eu.kudan.ar;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -23,7 +24,6 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
     private static final int MAX_AVATAR_AMOUNT = 3;
 
     private DatabaseReference fireReference;
-    private IntentBundle intentBundle;
     private FirebaseAuth authentication;
     private FirebaseUser currentUser;
 
@@ -39,23 +39,16 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home_page);
 
-        //Get data from SignUp.java
-        intentBundle = new IntentBundle(getIntent());
-
         authentication = FirebaseAuth.getInstance();
-        currentUser = authentication.getCurrentUser();
-
-        Log.d(debug, String.valueOf(authentication));
-        Log.d(debug, String.valueOf(currentUser));
-
-        Log.d(debug, currentUser.getEmail());
-
-        fireBaseSetup();
-        layoutSetup();
     }
 
     protected void onStart() {
         super.onStart();
+
+        currentUser = authentication.getCurrentUser();
+
+        fireBaseSetup();
+        layoutSetup();
 
         //Update data when someone found an avatar
         fireReference.addChildEventListener(new ChildEventListener() {
@@ -120,10 +113,14 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
     public void onClick(View v) {
         int i = v.getId();
 
-        if (i == R.id.bGlobalPlay)
-            intentBundle.setIntent(this, GlobalMap.class);
-        else if (i == R.id.bLocalPlay)
-            intentBundle.setIntent(this, LocalSetup.class);
+        if (i == R.id.bGlobalPlay) {
+            Intent intent = new Intent(this, GlobalMap.class);
+            this.startActivity(intent);
+        }
+        else if (i == R.id.bLocalPlay) {
+            Intent intent = new Intent(this, LocalSetup.class);
+            this.startActivity(intent);
+        }
     }
 
     /******************** Custom Functions ********************/
@@ -148,7 +145,7 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
     private void fireBaseSetup() {
 
         final FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
-        fireReference = fireDatabase.getReference("World").child(currentUser.getEmail());
+        fireReference = fireDatabase.getReference("World").child(currentUser.getUid());
 
         //Get data once
         fireReference.addListenerForSingleValueEvent(new ValueEventListener() {

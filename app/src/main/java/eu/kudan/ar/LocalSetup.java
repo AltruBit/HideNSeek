@@ -22,7 +22,6 @@ public class LocalSetup extends AppCompatActivity implements
 
     private DatabaseReference fireReference;
     private CurrentLocation mCurrentLocation;
-    private IntentBundle intentBundle;
 
     private EditText set_area;
     private EditText set_time;
@@ -40,8 +39,6 @@ public class LocalSetup extends AppCompatActivity implements
         setContentView(R.layout.activity_game_setup);
 
         mCurrentLocation = new CurrentLocation(this, this, this);
-
-        intentBundle = new IntentBundle(getIntent());
 
         //Connect to FireBase
         FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();

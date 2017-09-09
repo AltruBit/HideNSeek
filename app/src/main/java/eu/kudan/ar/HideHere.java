@@ -37,8 +37,9 @@ public class HideHere extends ARActivity implements
 
     private DatabaseReference fireReference;
     private CurrentLocation mCurrentLocation;
-    private IntentBundle intentBundle;
     private ARModelNode modelNode;
+
+    private FirebaseAuth authentication;
     private FirebaseUser currentUser;
 
     @Override
@@ -49,15 +50,9 @@ public class HideHere extends ARActivity implements
         mCurrentLocation = new CurrentLocation(this, this, this);
         mCurrentLocation.apiBuild();
 
-        //Get data from GlobalMap.java
-        intentBundle = new IntentBundle(getIntent());
+        authentication = FirebaseAuth.getInstance();
 
-        FirebaseAuth authentication = FirebaseAuth.getInstance();
-        currentUser = authentication.getCurrentUser();
 
-        //Setup connection to FireBase
-        FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
-        fireReference = fireDatabase.getReference("World").child(String.valueOf(currentUser));
 
         //Kudan API key
         ARAPIKey key = ARAPIKey.getInstance();
@@ -69,6 +64,12 @@ public class HideHere extends ARActivity implements
     protected void onStart() {
         super.onStart();
         mCurrentLocation.apiStart();
+
+        currentUser = authentication.getCurrentUser();
+
+        //Setup connection to FireBase
+        FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
+        fireReference = fireDatabase.getReference("World").child(String.valueOf(currentUser.getUid()));
     }
 
     protected void onRestart() {
@@ -215,14 +216,15 @@ public class HideHere extends ARActivity implements
 
         manager.setExact(AlarmManager.RTC_WAKEUP, currentMillis + 30000, pendingIntent);
 
-        intentBundle.setIntent(this, GlobalMap.class);
+        Intent intent = new Intent(this, GlobalMap.class);
+        this.startActivity(intent);
     }
 
     //Stop Tracking and remove data
     private void killAR() {
-        ARArbiTrack.getInstance().deinitialise();
         ARGyroPlaceManager.getInstance().deinitialise();
 
-        intentBundle.setIntent(this, GlobalMap.class);
+        Intent intent = new Intent(this, GlobalMap.class);
+        this.startActivity(intent);
     }
 }
