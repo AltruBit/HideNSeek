@@ -207,7 +207,6 @@ public class HideHere extends ARActivity implements
         Toast.makeText(getBaseContext(), "Hid an Avatar!", Toast.LENGTH_LONG).show();
 
         final Intent alarmIntent = new Intent(HideHere.this, AlarmReceiver.class);
-        alarmIntent.putExtra("username", String.valueOf(currentUser));
         alarmIntent.putExtra("millis", currentMillis);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(HideHere.this, (int) currentMillis, alarmIntent, 0);
