@@ -5,7 +5,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,16 +19,16 @@ import com.google.firebase.database.ValueEventListener;
 
 public class HomePage extends AppCompatActivity implements View.OnClickListener {
 
-    private static final String debug = "HomePageDebug";
+    private static final String TAG = "HomePageTAG";
     private static final int MAX_AVATAR_AMOUNT = 3;
 
     private DatabaseReference fireReference;
-    private FirebaseAuth authentication;
-    private FirebaseUser currentUser;
+    private FirebaseAuth fireAuth;
+    FirebaseUser fireUser;
 
-    private TextView free_amount;
-    private TextView hidden_amount;
-    private TextView point_amount;
+    private TextView freeTextView;
+    private TextView hiddenTextView;
+    private TextView pointTextView;
 
     private int freeAmount;
     private int hiddenAmount;
@@ -39,28 +38,32 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home_page);
 
-        authentication = FirebaseAuth.getInstance();
+        fireAuth = FirebaseAuth.getInstance();
     }
 
     protected void onStart() {
         super.onStart();
 
-        currentUser = authentication.getCurrentUser();
+        fireUser = fireAuth.getCurrentUser();
 
+        if (fireUser != null)
         fireBaseSetup();
-        layoutSetup();
+        initialUI();
+
+        updateUI(fireUser);
+
 
         //Update data when someone found an avatar
         fireReference.addChildEventListener(new ChildEventListener() {
 
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                Log.e(debug, "onChildAdded Called");
+                Log.d(TAG, "onChildAdded Called");
             }
 
             @Override
             public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-                point_amount.setText(String.valueOf(dataSnapshot.getValue()));
+                pointTextView.setText(String.valueOf(dataSnapshot.getValue()));
             }
 
             @Override
@@ -71,18 +74,18 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
                 hiddenAmount--;
                 freeAmount++;
 
-                hidden_amount.setText(String.valueOf(hiddenAmount));
-                free_amount.setText(String.valueOf(freeAmount));
+                hiddenTextView.setText(String.valueOf(hiddenAmount));
+                freeTextView.setText(String.valueOf(freeAmount));
             }
 
             @Override
             public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-                Log.e(debug, "onChildMoved Called");
+                Log.d(TAG, "onChildMoved Called");
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                Log.e(debug, "onCancelled Called");
+                Log.d(TAG, "onCancelled Called");
             }
         });
     }
@@ -126,26 +129,27 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
     /******************** Custom Functions ********************/
 
     //Setup activity_home_page.xml
-    private void layoutSetup() {
+    private void initialUI() {
+        TextView userTextView;
 
-        //Link to XML
-        Button goToWorld = (Button) findViewById(R.id.bGlobalPlay);
-        Button goToGroup = (Button) findViewById(R.id.bLocalPlay);
-        TextView user_name = (TextView) findViewById(R.id.userName);
-        point_amount = (TextView) findViewById(R.id.pointAmount);
-        free_amount = (TextView) findViewById(R.id.amountFree);
-        hidden_amount = (TextView) findViewById(R.id.amountHidden);
+        //Text Views
+        pointTextView = (TextView) findViewById(R.id.pointAmount);
+        freeTextView = (TextView) findViewById(R.id.amountFree);
+        hiddenTextView = (TextView) findViewById(R.id.amountHidden);
+        userTextView = (TextView) findViewById(R.id.userName);
 
-        user_name.setText(currentUser.getEmail());
-        goToWorld.setOnClickListener(this);
-        goToGroup.setOnClickListener(this);
+        userTextView.setText(fireUser.getEmail());
+
+        //Buttons
+        findViewById(R.id.bGlobalPlay).setOnClickListener(this);
+        findViewById(R.id.bLocalPlay).setOnClickListener(this);
     }
 
     //Setup FireBase connection
     private void fireBaseSetup() {
 
         final FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
-        fireReference = fireDatabase.getReference("World").child(currentUser.getUid());
+        fireReference = fireDatabase.getReference("World").child(fireUser.getUid());
 
         //Get data once
         fireReference.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -164,15 +168,19 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
                 }
 
                 //Set number of points
-                point_amount.setText(String.valueOf(points));
-                hidden_amount.setText(String.valueOf(hiddenAmount));
-                free_amount.setText(String.valueOf(freeAmount));
+                pointTextView.setText(String.valueOf(points));
+                hiddenTextView.setText(String.valueOf(hiddenAmount));
+                freeTextView.setText(String.valueOf(freeAmount));
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                Log.e(debug, "onCancelled Called");
+                Log.d(TAG, "onCancelled Called");
             }
         });
+    }
+
+    private void updateUI(FirebaseUser fireUser) {
+
     }
 }

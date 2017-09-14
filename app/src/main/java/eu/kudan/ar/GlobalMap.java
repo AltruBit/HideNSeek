@@ -31,55 +31,57 @@ public class GlobalMap extends FragmentActivity implements
         OnLocationChangedListener,
         OnMapReadyCallback {
 
-    private static final String debug = "GlobalMapDebug";
+    private static final String TAG = "GlobalMapTAG";
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
     private static final int MAX_AVATAR_AMOUNT = 3;
 
     private DatabaseReference fireReference;
-    FirebaseUser currentUser;
-    private CurrentLocation mCurrentLocation;
+    private FirebaseUser fireUser;
 
-    private GoogleMap mGoogleMap;
+    private CurrentLocation currentLocation;
 
-    private Button b_hide_avatar;
-    private TextView t_hidden_amount;
-    private TextView t_free_amount;
+    private GoogleMap googleMap;
+
+    private Button hideButton;
+    private TextView hiddenTextView;
+    private TextView freeTextView;
 
     private int hiddenAmount;
     private int freeAmount;
-    private FirebaseAuth authentication;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_global_map);
 
-        mCurrentLocation = new CurrentLocation(this, this, this);
-        mCurrentLocation.apiBuild();
+        currentLocation = new CurrentLocation(this, this, this);
+        currentLocation.apiBuild();
 
-        authentication = FirebaseAuth.getInstance();
+        fireUser = FirebaseAuth.getInstance().getCurrentUser();
+
+        if (fireUser != null) {
+            fireBaseSetup();
+            layoutSetup();
+        }
+        else
+            Log.d(TAG, "User logged out");
     }
 
     protected void onStart() {
         super.onStart();
-        mCurrentLocation.apiStart();
-
-        currentUser = authentication.getCurrentUser();
-
-        fireBaseSetup();
-        layoutSetup();
+        currentLocation.apiStart();
 
         //Update data if someone found avatar
         fireReference.addChildEventListener(new ChildEventListener() {
 
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                Log.d(debug, "onChildAdded Called");
+                Log.d(TAG, "onChildAdded Called");
             }
 
             @Override
             public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-                Log.d(debug, "onChildChanged Called");
+                Log.d(TAG, "onChildChanged Called");
             }
 
             @Override
@@ -89,18 +91,18 @@ public class GlobalMap extends FragmentActivity implements
                 hiddenAmount--;
                 freeAmount++;
 
-                t_hidden_amount.setText(String.valueOf(hiddenAmount));
-                t_free_amount.setText(String.valueOf(freeAmount));
+                hiddenTextView.setText(String.valueOf(hiddenAmount));
+                freeTextView.setText(String.valueOf(freeAmount));
             }
 
             @Override
             public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-                Log.d(debug, "onChildMoved Called");
+                Log.d(TAG, "onChildMoved Called");
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                Log.d(debug, "onCancelled Called");
+                Log.d(TAG, "onCancelled Called");
             }
         });
     }
@@ -111,7 +113,7 @@ public class GlobalMap extends FragmentActivity implements
 
     protected void onResume() {
         super.onResume();
-        mCurrentLocation.apiStart();
+        currentLocation.apiStart();
     }
 
     protected void onPause() {
@@ -120,7 +122,7 @@ public class GlobalMap extends FragmentActivity implements
 
     protected void onStop() {
         super.onStop();
-        mCurrentLocation.apiStop();
+        currentLocation.apiStop();
     }
 
     protected void onDestroy() {
@@ -142,15 +144,15 @@ public class GlobalMap extends FragmentActivity implements
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        mGoogleMap = googleMap;
+        this.googleMap = googleMap;
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
         else {
-            mGoogleMap.setMyLocationEnabled(true);
-            mGoogleMap.getUiSettings().setMyLocationButtonEnabled(false);
-            mGoogleMap.getUiSettings().setScrollGesturesEnabled(false);
-            mGoogleMap.getUiSettings().setZoomGesturesEnabled(false);
+            googleMap.setMyLocationEnabled(true);
+            googleMap.getUiSettings().setMyLocationButtonEnabled(false);
+            googleMap.getUiSettings().setScrollGesturesEnabled(false);
+            googleMap.getUiSettings().setZoomGesturesEnabled(false);
         }
     }
 
@@ -158,8 +160,8 @@ public class GlobalMap extends FragmentActivity implements
     public void onLocationChanged(Location location) {
         LatLng currentLatLng = new LatLng(location.getLatitude(), location.getLongitude());
 
-        if (mGoogleMap != null)
-            mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 18.0f));
+        if (googleMap != null)
+            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 18.0f));
     }
 
     /******************** Custom Functions ********************/
@@ -173,19 +175,19 @@ public class GlobalMap extends FragmentActivity implements
 
         //Link to XML
         Button b_go_search = (Button) findViewById(R.id.seeker);
-        b_hide_avatar = (Button) findViewById(R.id.hideAvatar);
-        t_hidden_amount = (TextView) findViewById(R.id.amountHidden);
-        t_free_amount = (TextView) findViewById(R.id.amountFree);
+        hideButton = (Button) findViewById(R.id.hideAvatar);
+        hiddenTextView= (TextView) findViewById(R.id.amountHidden);
+        freeTextView = (TextView) findViewById(R.id.amountFree);
 
         b_go_search.setOnClickListener(this);
-        b_hide_avatar.setOnClickListener(this);
+        hideButton.setOnClickListener(this);
     }
 
     //Setup FireBase connection
     private void fireBaseSetup() {
 
         FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
-        fireReference = fireDatabase.getReference("World").child(String.valueOf(currentUser.getUid())).child("Hiding Locations");
+        fireReference = fireDatabase.getReference("World").child(String.valueOf(fireUser.getUid())).child("Hiding Locations");
 
         //Get data once
         fireReference.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -196,20 +198,20 @@ public class GlobalMap extends FragmentActivity implements
                 hiddenAmount = (int) dataSnapshot.getChildrenCount();
                 freeAmount = MAX_AVATAR_AMOUNT - hiddenAmount;
 
-                t_hidden_amount.setText(String.valueOf(hiddenAmount));
-                t_free_amount.setText(String.valueOf(freeAmount));
+                hiddenTextView.setText(String.valueOf(hiddenAmount));
+                freeTextView.setText(String.valueOf(freeAmount));
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                Log.d(debug, "onCancelled Called");
+                Log.d(TAG, "onCancelled Called");
             }
         });
     }
 
     //Search this area, if user has one avatar hidden
     private void searchHere() {
-        if (Integer.parseInt(t_hidden_amount.getText() + "") == 0)
+        if (Integer.parseInt(hiddenTextView.getText() + "") == 0)
             Toast.makeText(getBaseContext(), "Need to have at least one Avatar hidden on map!", Toast.LENGTH_LONG).show();
         else {
             Intent intent = new Intent(this, SearchHere.class);
@@ -221,7 +223,7 @@ public class GlobalMap extends FragmentActivity implements
     private void hideHere() {
         if (freeAmount == 0) {
             Toast.makeText(getBaseContext(), "No Avatars to hide!", Toast.LENGTH_SHORT).show();
-            b_hide_avatar.setEnabled(false);
+            hideButton.setEnabled(false);
         }
         else {
             Intent intent = new Intent(this, HideHere.class);
