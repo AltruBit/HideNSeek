@@ -28,6 +28,7 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
     private static final String TAG = "SignUpTAG ";
 
     private FirebaseAuth fireAuth;
+    private FirebaseUser fireUser;
 
     private TextView statusTextView;
     private TextView detailTextView;
@@ -39,17 +40,17 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_up);
 
-        fireAuth = FirebaseAuth.getInstance();
-
         initialUI();
         permissionsRequest();
+
+        fireAuth = FirebaseAuth.getInstance();
     }
 
     @Override
     public void onStart() {
         super.onStart();
         // Check if user is signed in (non-null) and update UI accordingly.
-        FirebaseUser fireUser = fireAuth.getCurrentUser();
+        fireUser = fireAuth.getCurrentUser();
         updateUI(fireUser);
     }
 
@@ -82,37 +83,40 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
 
     /******************** Custom Functions ********************/
 
-    //Request permissions
-    public void permissionsRequest() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{
-                    Manifest.permission.INTERNET, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.CAMERA, Manifest.permission.ACCESS_FINE_LOCATION}, 111);
-        }
+    private void initialUI() {
+        // Text Views
+        statusTextView = (TextView) findViewById(R.id.status);
+        detailTextView = (TextView) findViewById(R.id.detail);
+
+        //Edit Views
+        emailField = (EditText) findViewById(R.id.field_email);
+        passwordField = (EditText) findViewById(R.id.field_password);
+
+        // Buttons
+        findViewById(R.id.email_sign_in_button).setOnClickListener(this);
+        findViewById(R.id.email_create_account_button).setOnClickListener(this);
+        findViewById(R.id.sign_out_button).setOnClickListener(this);
+
     }
 
-    //Ask user to give permission for ones that were denied
-    private void permissionsNotSelected() {
-        AlertDialog.Builder builder = new AlertDialog.Builder (this);
-        builder.setTitle("Permissions Required");
-        builder.setMessage("Please enable the requested permissions in the app settings in order to use this demo app");
-        builder.setNeutralButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-                dialog.cancel();
-                System.exit(1);
-            }
-        });
-        AlertDialog noInternet = builder.create();
-        noInternet.show();
+    private void updateUI(FirebaseUser fireUser) {
+        if (fireUser != null) {
+            Intent intent = new Intent(this, HomePage.class);
+            this.startActivity(intent);
+        } else {
+            statusTextView.setText(R.string.signed_out);
+            detailTextView.setText(null);
+
+            findViewById(R.id.email_password_buttons).setVisibility(View.VISIBLE);
+            findViewById(R.id.email_password_fields).setVisibility(View.VISIBLE);
+            findViewById(R.id.signed_in_buttons).setVisibility(View.GONE);
+        }
     }
 
     private void signIn(String email, String password) {
         Log.d(TAG, "signIn:" + email);
 
-        if (!validateForm()) {
+        if (validateForm()) {
             return;
         }
 
@@ -123,7 +127,7 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
                         if (task.isSuccessful()) {
                             // Sign in success, update UI with the signed-in user's information
                             Log.d(TAG, "signInWithEmail:success");
-                            FirebaseUser fireUser = fireAuth.getCurrentUser();
+                            fireUser = fireAuth.getCurrentUser();
 
                             if (fireUser != null) {
                                 Intent intent = new Intent(SignUp.this, HomePage.class);
@@ -153,7 +157,7 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
 
     private void createAccount(String email, String password) {
         Log.d(TAG, "createAccount:" + email);
-        if (!validateForm()) {
+        if (validateForm()) {
             return;
         }
 
@@ -164,7 +168,7 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
                         if (task.isSuccessful()) {
                             // Sign in success, update UI with the signed-in user's information
                             Log.d(TAG, "createUserWithEmail:success");
-                            FirebaseUser fireUser = fireAuth.getCurrentUser();
+                            fireUser = fireAuth.getCurrentUser();
 
                             if (fireUser != null) {
                                 Intent intent = new Intent(SignUp.this, HomePage.class);
@@ -184,34 +188,31 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
                 });
     }
 
-    private void updateUI(FirebaseUser fireUser) {
-        if (fireUser != null) {
-            Intent intent = new Intent(this, HomePage.class);
-            this.startActivity(intent);
-        } else {
-            statusTextView.setText(R.string.signed_out);
-            detailTextView.setText(null);
-
-            findViewById(R.id.email_password_buttons).setVisibility(View.VISIBLE);
-            findViewById(R.id.email_password_fields).setVisibility(View.VISIBLE);
-            findViewById(R.id.signed_in_buttons).setVisibility(View.GONE);
+    //Request permissions
+    private void permissionsRequest() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{
+                    Manifest.permission.INTERNET, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.CAMERA, Manifest.permission.ACCESS_FINE_LOCATION}, 111);
         }
     }
 
-    private void initialUI() {
-        // Text Views
-        statusTextView = (TextView) findViewById(R.id.status);
-        detailTextView = (TextView) findViewById(R.id.detail);
-
-        //Edit Views
-        emailField = (EditText) findViewById(R.id.field_email);
-        passwordField = (EditText) findViewById(R.id.field_password);
-
-        // Buttons
-        findViewById(R.id.email_sign_in_button).setOnClickListener(this);
-        findViewById(R.id.email_create_account_button).setOnClickListener(this);
-        findViewById(R.id.sign_out_button).setOnClickListener(this);
-
+    //Ask user to give permission for ones that were denied
+    private void permissionsNotSelected() {
+        AlertDialog.Builder builder = new AlertDialog.Builder (this);
+        builder.setTitle("Permissions Required");
+        builder.setMessage("Please enable the requested permissions in the app settings in order to use this demo app");
+        builder.setNeutralButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                dialog.cancel();
+                System.exit(1);
+            }
+        });
+        AlertDialog noInternet = builder.create();
+        noInternet.show();
     }
 
     private boolean validateForm() {
@@ -231,6 +232,6 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
         } else
             passwordField.setError(null);
 
-        return valid;
+        return !valid;
     }
 }

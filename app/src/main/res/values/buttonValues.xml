@@ -1,17 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="bSignUp">Sign Up</string>
-
     <string name="bLocalPlay">Play with Friends</string>
-
     <string name="bGlobalPlay">Play with World</string>
-
     <string name="bHideHere">Hide Here</string>
     <string name="bHide">Hide</string>
-
     <string name="bSearchHere">Search Here</string>
     <string name="bSearch">Search</string>
-
     <string name="bGoBack">Go back</string>
-
 </resources>

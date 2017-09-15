@@ -22,7 +22,6 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -36,13 +35,12 @@ public class GlobalMap extends FragmentActivity implements
     private static final int MAX_AVATAR_AMOUNT = 3;
 
     private DatabaseReference fireReference;
+    private FirebaseAuth fireAuth;
     private FirebaseUser fireUser;
 
     private CurrentLocation currentLocation;
-
     private GoogleMap googleMap;
 
-    private Button hideButton;
     private TextView hiddenTextView;
     private TextView freeTextView;
 
@@ -57,58 +55,22 @@ public class GlobalMap extends FragmentActivity implements
         currentLocation = new CurrentLocation(this, this, this);
         currentLocation.apiBuild();
 
-        fireUser = FirebaseAuth.getInstance().getCurrentUser();
-
-        if (fireUser != null) {
-            fireBaseSetup();
-            layoutSetup();
-        }
-        else
-            Log.d(TAG, "User logged out");
+        initialUI();
+        fireAuth = FirebaseAuth.getInstance();
     }
 
     protected void onStart() {
         super.onStart();
         currentLocation.apiStart();
 
-        //Update data if someone found avatar
-        fireReference.addChildEventListener(new ChildEventListener() {
+        fireUser = fireAuth.getCurrentUser();
 
-            @Override
-            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                Log.d(TAG, "onChildAdded Called");
-            }
-
-            @Override
-            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-                Log.d(TAG, "onChildChanged Called");
-            }
-
-            @Override
-            public void onChildRemoved(DataSnapshot dataSnapshot) {
-                Toast.makeText(getBaseContext(), "You have an avatar back!", Toast.LENGTH_LONG).show();
-
-                hiddenAmount--;
-                freeAmount++;
-
-                hiddenTextView.setText(String.valueOf(hiddenAmount));
-                freeTextView.setText(String.valueOf(freeAmount));
-            }
-
-            @Override
-            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-                Log.d(TAG, "onChildMoved Called");
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.d(TAG, "onCancelled Called");
-            }
-        });
-    }
-
-    protected void onRestart() {
-        super.onRestart();
+        if (fireUser != null) {
+            fireBaseSetup();
+            updateFireBase();
+        }
+        else
+            Log.d(TAG, "User not logged in!");
     }
 
     protected void onResume() {
@@ -116,17 +78,9 @@ public class GlobalMap extends FragmentActivity implements
         currentLocation.apiStart();
     }
 
-    protected void onPause() {
-        super.onPause();
-    }
-
     protected void onStop() {
         super.onStop();
         currentLocation.apiStop();
-    }
-
-    protected void onDestroy() {
-        super.onDestroy();
     }
 
     /******************** Override Functions ********************/
@@ -166,40 +120,49 @@ public class GlobalMap extends FragmentActivity implements
 
     /******************** Custom Functions ********************/
 
-    //Setup activity_global_map.xml
-    private void layoutSetup() {
+    // Setup activity_global_map.xml
+    private void initialUI() {
 
-        //Set Up Google Maps
+        // Set Up Google Maps
         MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.hideMap);
         mapFragment.getMapAsync(this);
 
-        //Link to XML
-        Button b_go_search = (Button) findViewById(R.id.seeker);
-        hideButton = (Button) findViewById(R.id.hideAvatar);
+        // Text Views
         hiddenTextView= (TextView) findViewById(R.id.amountHidden);
         freeTextView = (TextView) findViewById(R.id.amountFree);
 
-        b_go_search.setOnClickListener(this);
-        hideButton.setOnClickListener(this);
+        // Buttons
+        findViewById(R.id.seeker).setOnClickListener(this);
+        findViewById(R.id.hideAvatar).setOnClickListener(this);
     }
 
-    //Setup FireBase connection
+    private void updateUI() {
+
+        fireUser = fireAuth.getCurrentUser();
+
+        if (fireUser != null) {
+            hiddenTextView.setText(String.valueOf(hiddenAmount));
+            freeTextView.setText(String.valueOf(freeAmount));
+        }
+        else {
+            Log.d(TAG, "User not logged in");
+        }
+    }
+
+    // Setup FireBase connection
     private void fireBaseSetup() {
+        fireReference = FirebaseDatabase.getInstance().getReference("World").child(String.valueOf(fireUser.getUid())).child("Hiding Locations");
 
-        FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
-        fireReference = fireDatabase.getReference("World").child(String.valueOf(fireUser.getUid())).child("Hiding Locations");
-
-        //Get data once
+        // Get data once
         fireReference.addListenerForSingleValueEvent(new ValueEventListener() {
 
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                //Get number of hidden avatars
+                // Get number of hidden avatars
                 hiddenAmount = (int) dataSnapshot.getChildrenCount();
                 freeAmount = MAX_AVATAR_AMOUNT - hiddenAmount;
 
-                hiddenTextView.setText(String.valueOf(hiddenAmount));
-                freeTextView.setText(String.valueOf(freeAmount));
+                updateUI();
             }
 
             @Override
@@ -209,7 +172,43 @@ public class GlobalMap extends FragmentActivity implements
         });
     }
 
-    //Search this area, if user has one avatar hidden
+    private void updateFireBase() {
+        // Update data if someone found avatar
+        fireReference.addChildEventListener(new ChildEventListener() {
+
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                Log.d(TAG, "onChildAdded Called");
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                Log.d(TAG, "onChildChanged Called");
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+                Toast.makeText(getBaseContext(), "You have an avatar back!", Toast.LENGTH_LONG).show();
+
+                hiddenAmount--;
+                freeAmount++;
+
+                updateUI();
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+                Log.d(TAG, "onChildMoved Called");
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.d(TAG, "onCancelled Called");
+            }
+        });
+    }
+
+    // Search this area, if user has one avatar hidden
     private void searchHere() {
         if (Integer.parseInt(hiddenTextView.getText() + "") == 0)
             Toast.makeText(getBaseContext(), "Need to have at least one Avatar hidden on map!", Toast.LENGTH_LONG).show();
@@ -219,11 +218,11 @@ public class GlobalMap extends FragmentActivity implements
         }
     }
 
-    //Hide in this area, if user has avatars to hide
+    // Hide in this area, if user has avatars to hide
     private void hideHere() {
         if (freeAmount == 0) {
             Toast.makeText(getBaseContext(), "No Avatars to hide!", Toast.LENGTH_SHORT).show();
-            hideButton.setEnabled(false);
+            findViewById(R.id.hideAvatar).setEnabled(false);
         }
         else {
             Intent intent = new Intent(this, HideHere.class);

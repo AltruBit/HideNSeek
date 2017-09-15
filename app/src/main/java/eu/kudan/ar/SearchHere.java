@@ -10,7 +10,6 @@ import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,6 +24,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
+
+import java.util.Locale;
 
 import eu.kudan.kudan.ARAPIKey;
 import eu.kudan.kudan.ARActivity;
@@ -42,26 +43,26 @@ public class SearchHere extends ARActivity implements
         View.OnClickListener,
         GestureDetector.OnGestureListener {
 
-    private static final String debug = "SearchHereDebug";
+    private static final String TAG = "SearchHereTAG";
+
+    private Data fireData;
+
+    private DatabaseReference fireReference;
+    private FirebaseUser fireUser;
+    private DataSnapshot fireSnap;
 
     private GestureDetectorCompat gestureDetect;
-    private CurrentLocation mCurrentLocation;
-    private DatabaseReference fireReference;
     private Quaternion orientation;
     private ARModelNode modelNode;
-    private DataSnapshot toRemove;
-    private CircleOptions circle;
     private Vector3f position;
-    private Data fireData;
-    private FirebaseUser currentUser;
-    private FirebaseAuth authentication;
-
-    private TextView timer;
-
-    private Long points;
-
 
     private CountDownTimer countDownTimer;
+    private CurrentLocation mCurrentLocation;
+    private CircleOptions circle;
+
+    private TextView timerTextView;
+
+    private Long points;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -69,53 +70,29 @@ public class SearchHere extends ARActivity implements
         setContentView(R.layout.activity_search_here);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
+        gestureDetect = new GestureDetectorCompat(this, this);
         mCurrentLocation = new CurrentLocation(this, this, this);
         mCurrentLocation.apiBuild();
 
-        gestureDetect = new GestureDetectorCompat(this, this);
+        fireReference = FirebaseDatabase.getInstance().getReference("World");
 
-        authentication = FirebaseAuth.getInstance();
 
         //Kudan API Key
         ARAPIKey key = ARAPIKey.getInstance();
         key.setAPIKey(String.valueOf(R.string.kudan_api_key));
 
-        countDownTimer = new CountDownTimer(30000, 1000) {
-
-            @Override
-            public void onTick(long millisUntilFinished) {
-
-                timer.setText("Timer:" + millisUntilFinished/1000);
-
-                if (millisUntilFinished / 1000 == 10)
-                    Toast.makeText(getBaseContext(), "10 seconds remaining!", Toast.LENGTH_LONG).show();
-            }
-
-            @Override
-            public void onFinish() {
-                Toast.makeText(getBaseContext(), "Time is up!", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(SearchHere.this, GlobalMap.class);
-                startActivity(intent);
-            }
-        }.start();
-
+        initialUI();
+        startTimer();
     }
 
     protected void onStart() {
         super.onStart();
-        mCurrentLocation.apiStart();
+        fireUser = FirebaseAuth.getInstance().getCurrentUser();
 
-        currentUser = authentication.getCurrentUser();
-
-        //Setup connection to FireBase
-        FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
-        fireReference = fireDatabase.getReference("World");
-
-        layoutSetup();
-    }
-
-    protected void onRestart() {
-        super.onRestart();
+        if (fireUser  != null)
+            mCurrentLocation.apiStart();
+        else
+            Log.d(TAG, "User not logged in!");
     }
 
     protected void onResume() {
@@ -123,18 +100,10 @@ public class SearchHere extends ARActivity implements
         mCurrentLocation.apiStart();
     }
 
-    protected void onPause() {
-        super.onPause();
-    }
-
     protected void onStop() {
         super.onStop();
-        countDownTimer.cancel();
         mCurrentLocation.apiStop();
-    }
-
-    protected void onDestroy() {
-        super.onDestroy();
+        countDownTimer.cancel();
     }
 
     /******************** Override Functions ********************/
@@ -158,7 +127,7 @@ public class SearchHere extends ARActivity implements
 
     @Override
     public void onLocationChanged(Location location) {
-        Log.d(debug, "onLocationChanged has been called");
+        Log.d(TAG, "onLocationChanged has been called");
     }
 
     @Override
@@ -184,8 +153,8 @@ public class SearchHere extends ARActivity implements
         {
             arArbiTrack.stop();
             points += 100;
-            fireReference.child(String.valueOf(currentUser.getUid())).child("Points").setValue(points);
-            toRemove.getRef().removeValue();
+            fireReference.child(String.valueOf(fireUser.getUid())).child("Points").setValue(points);
+            fireSnap.getRef().removeValue();
 
             Intent intent = new Intent(this, GlobalMap.class);
             this.startActivity(intent);
@@ -209,14 +178,73 @@ public class SearchHere extends ARActivity implements
 
     /******************** Custom Functions ********************/
 
-    //Setup activity_search_here.xml
-    private void layoutSetup() {
-        Button searchHere = (Button) findViewById(R.id.clickSearch);
-        Button bGoBack = (Button) findViewById(R.id.backToMap);
-        timer = (TextView) findViewById(R.id.timer);
+    // Setup activity_search_here.xml
+    private void initialUI() {
 
-        searchHere.setOnClickListener(this);
-        bGoBack.setOnClickListener(this);
+        // Text Views
+        timerTextView = (TextView) findViewById(R.id.timer);
+
+        // Buttons
+        findViewById(R.id.clickSearch).setOnClickListener(this);
+        findViewById(R.id.backToMap).setOnClickListener(this);
+    }
+
+    //Start AR tracking
+    private void startAR() {
+        ARArbiTrack arArbiTrack = ARArbiTrack.getInstance();
+
+        arArbiTrack.start();
+        arArbiTrack.getTargetNode().setVisible(false);
+    }
+
+    private void startTimer() {
+        countDownTimer = new CountDownTimer(30000, 1000) {
+
+            @Override
+            public void onTick(long millisUntilFinished) {
+
+                timerTextView.setText(String.format(Locale.getDefault(), "Timer: %d", millisUntilFinished/1000));
+
+                if (millisUntilFinished / 1000 == 10)
+                    Toast.makeText(getBaseContext(), "10 seconds remaining!", Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onFinish() {
+                Toast.makeText(getBaseContext(), "Time is up!", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(SearchHere.this, GlobalMap.class);
+                startActivity(intent);
+            }
+        }.start();
+    }
+
+    //Setup model node tracking
+    private void setupARAbiTrack() {
+
+        // Create an image node to be used as a target node
+        ARImageNode targetImageNode = new ARImageNode("target.png");
+
+        // Scale and rotate the image to the correct transformation.
+        targetImageNode.scaleByUniform(0.3f);
+        targetImageNode.rotateByDegrees(90, 1, 0, 0);
+
+        targetImageNode.setPosition(position);
+        targetImageNode.setScale(0.5F, 0.5F, 0.5F);
+        targetImageNode.setOrientation(orientation);
+
+        // Initialise gyro placement. Gyro placement positions content on a virtual floor plane where the device is aiming.
+        ARGyroPlaceManager gyroPlaceManager = ARGyroPlaceManager.getInstance();
+        gyroPlaceManager.initialise();
+
+        // Initialise the arAbiTracker
+        ARArbiTrack arArbiTrack = ARArbiTrack.getInstance();
+        arArbiTrack.initialise();
+
+        // Set the arAbiTracker target node to the node moved by the user.
+        arArbiTrack.setTargetNode(targetImageNode);
+
+        // Add model node to world
+        arArbiTrack.getWorld().addChild(modelNode);
     }
 
     //Create model Node for AR
@@ -244,35 +272,6 @@ public class SearchHere extends ARActivity implements
         modelNode.scaleByUniform(0.25f);
     }
 
-    //Setup model node tracking
-    public void setupARAbiTrack() {
-
-        // Create an image node to be used as a target node
-        ARImageNode targetImageNode = new ARImageNode("target.png");
-
-        // Scale and rotate the image to the correct transformation.
-        targetImageNode.scaleByUniform(0.3f);
-        targetImageNode.rotateByDegrees(90, 1, 0, 0);
-
-        targetImageNode.setPosition(position);
-        targetImageNode.setScale(0.5F, 0.5F, 0.5F);
-        targetImageNode.setOrientation(orientation);
-
-        // Initialise gyro placement. Gyro placement positions content on a virtual floor plane where the device is aiming.
-        ARGyroPlaceManager gyroPlaceManager = ARGyroPlaceManager.getInstance();
-        gyroPlaceManager.initialise();
-
-        // Initialise the arbiTracker
-        ARArbiTrack arArbiTrack = ARArbiTrack.getInstance();
-        arArbiTrack.initialise();
-
-        // Set the arAbiTracker target node to the node moved by the user.
-        arArbiTrack.setTargetNode(targetImageNode);
-
-        // Add model node to world
-        arArbiTrack.getWorld().addChild(modelNode);
-}
-
     //Search are for 30 seconds
     private void search() {
         final float[] distance = new float[2];
@@ -291,48 +290,40 @@ public class SearchHere extends ARActivity implements
                 for (DataSnapshot storeSnap : dataSnapshot.getChildren()) {
 
                     //Skip own username
-                    if (!storeSnap.getKey().equals(currentUser.getUid())) {
+                    if (!storeSnap.getKey().equals(fireUser.getUid())) {
                         for (DataSnapshot dataSnap : storeSnap.child("Hiding Locations").getChildren()) {
-                                Log.d(debug, "Searching user:" + storeSnap.getKey());
+                            Log.d(TAG, "Searching user:" + storeSnap.getKey());
 
-                                fireData = dataSnap.getValue(Data.class);
+                            fireData = dataSnap.getValue(Data.class);
 
-                                 double markerX = fireData.getLatitude();
-                                double markerY = fireData.getLongitude();
+                            double markerX = fireData.getLatitude();
+                            double markerY = fireData.getLongitude();
 
-                                 Location.distanceBetween(latitude, longitude, markerX, markerY, distance);
+                            Location.distanceBetween(latitude, longitude, markerX, markerY, distance);
 
-                                 if (distance[0] < circle.getRadius()) {
-                                     Toast.makeText(getBaseContext(), "Someone is around this area!", Toast.LENGTH_SHORT).show();
+                            if (distance[0] < circle.getRadius()) {
+                                Toast.makeText(getBaseContext(), "Someone is around this area!", Toast.LENGTH_SHORT).show();
 
-                                     toRemove = dataSnap;
-                                     position = fireData.getPosition();
-                                     orientation = fireData.getOrientation();
+                                fireSnap = dataSnap;
+                                position = fireData.getPosition();
+                                orientation = fireData.getOrientation();
 
-                                     setupARAbiTrack();
-                                     startAR();
-                                 } else
-                                     Toast.makeText(getBaseContext(), "No one around here!", Toast.LENGTH_SHORT).show();
+                                setupARAbiTrack();
+                                startAR();
+                            }
+                            else
+                                Toast.makeText(getBaseContext(), "No one around here!", Toast.LENGTH_SHORT).show();
                         }
                     }
-                    else {
+                    else
                         points = (Long)storeSnap.child("Points").getValue();
-                    }
                 }
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                Log.d(debug, "onCancelled Called");
+                Log.d(TAG, "onCancelled Called");
             }
         });
-    }
-
-    //Start AR tracking
-    public void startAR() {
-        ARArbiTrack arArbiTrack = ARArbiTrack.getInstance();
-
-        arArbiTrack.start();
-        arArbiTrack.getTargetNode().setVisible(false);
     }
 }

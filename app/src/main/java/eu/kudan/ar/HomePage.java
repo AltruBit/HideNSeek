@@ -24,12 +24,14 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
 
     private DatabaseReference fireReference;
     private FirebaseAuth fireAuth;
-    FirebaseUser fireUser;
+    private FirebaseUser fireUser;
 
     private TextView freeTextView;
     private TextView hiddenTextView;
     private TextView pointTextView;
+    private TextView userTextView;
 
+    private Long points;
     private int freeAmount;
     private int hiddenAmount;
 
@@ -38,6 +40,7 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home_page);
 
+        initialUI();
         fireAuth = FirebaseAuth.getInstance();
     }
 
@@ -46,68 +49,13 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
 
         fireUser = fireAuth.getCurrentUser();
 
-        if (fireUser != null)
-        fireBaseSetup();
-        initialUI();
-
-        updateUI(fireUser);
-
-
-        //Update data when someone found an avatar
-        fireReference.addChildEventListener(new ChildEventListener() {
-
-            @Override
-            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                Log.d(TAG, "onChildAdded Called");
-            }
-
-            @Override
-            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-                pointTextView.setText(String.valueOf(dataSnapshot.getValue()));
-            }
-
-            @Override
-            public void onChildRemoved(DataSnapshot dataSnapshot) {
-
-                Toast.makeText(getBaseContext(), "You got one Avatar back!", Toast.LENGTH_SHORT).show();
-
-                hiddenAmount--;
-                freeAmount++;
-
-                hiddenTextView.setText(String.valueOf(hiddenAmount));
-                freeTextView.setText(String.valueOf(freeAmount));
-            }
-
-            @Override
-            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-                Log.d(TAG, "onChildMoved Called");
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.d(TAG, "onCancelled Called");
-            }
-        });
-    }
-
-    protected void onRestart() {
-        super.onRestart();
-    }
-
-    protected void onResume() {
-        super.onResume();
-    }
-
-    protected void onPause() {
-        super.onPause();
-    }
-
-    protected void onStop() {
-        super.onStop();
-    }
-
-    protected void onDestroy() {
-        super.onDestroy();
+        if (fireUser != null) {
+            fireBaseSetup();
+            updateFireBase();
+        }
+        else {
+            Log.d(TAG, "User not logged in!");
+        }
     }
 
     /******************** Override Functions ********************/
@@ -128,49 +76,65 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
 
     /******************** Custom Functions ********************/
 
-    //Setup activity_home_page.xml
+    // Setup activity_home_page.xml
     private void initialUI() {
-        TextView userTextView;
 
-        //Text Views
+        // Text Views
         pointTextView = (TextView) findViewById(R.id.pointAmount);
         freeTextView = (TextView) findViewById(R.id.amountFree);
         hiddenTextView = (TextView) findViewById(R.id.amountHidden);
         userTextView = (TextView) findViewById(R.id.userName);
 
-        userTextView.setText(fireUser.getEmail());
-
-        //Buttons
+        // Buttons
         findViewById(R.id.bGlobalPlay).setOnClickListener(this);
         findViewById(R.id.bLocalPlay).setOnClickListener(this);
     }
 
-    //Setup FireBase connection
-    private void fireBaseSetup() {
+    private void updateUI() {
 
-        final FirebaseDatabase fireDatabase = FirebaseDatabase.getInstance();
-        fireReference = fireDatabase.getReference("World").child(fireUser.getUid());
+        fireUser = fireAuth.getCurrentUser();
 
-        //Get data once
-        fireReference.addListenerForSingleValueEvent(new ValueEventListener() {
+        if (fireUser != null) {
+            userTextView.setText(fireUser.getEmail());
+            pointTextView.setText(String.valueOf(points));
+            hiddenTextView.setText(String.valueOf(hiddenAmount));
+            freeTextView.setText(String.valueOf(freeAmount));
+        }
+        else {
+            Log.d(TAG, "User not logged in");
+        }
+    }
 
-            public void onDataChange(DataSnapshot dataSnapshot) {
+    private void updateFireBase() {
+        // Update data when someone found an avatar
+        fireReference.addChildEventListener(new ChildEventListener() {
 
-                //Get number of hidden avatars
-                hiddenAmount = (int) dataSnapshot.child("Hiding Locations").getChildrenCount();
-                freeAmount = MAX_AVATAR_AMOUNT - hiddenAmount;
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                Log.d(TAG, "onChildAdded Called");
+            }
 
-                Long points = (Long) dataSnapshot.child("Points").getValue();
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                Log.d(TAG, "onChildChanged Called");
+                pointTextView.setText(String.valueOf(dataSnapshot.getValue()));
+            }
 
-                if (points == null) {
-                    fireReference.child("Points").setValue(0);
-                    points = Long.valueOf("0");
-                }
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+                Log.d(TAG, "onChildRemoved Called");
 
-                //Set number of points
-                pointTextView.setText(String.valueOf(points));
-                hiddenTextView.setText(String.valueOf(hiddenAmount));
-                freeTextView.setText(String.valueOf(freeAmount));
+                Toast.makeText(getBaseContext(), "You got one Avatar back!", Toast.LENGTH_SHORT).show();
+
+                hiddenAmount--;
+                freeAmount++;
+
+                updateUI();
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+                Log.d(TAG, "onChildMoved Called");
             }
 
             @Override
@@ -180,7 +144,35 @@ public class HomePage extends AppCompatActivity implements View.OnClickListener 
         });
     }
 
-    private void updateUI(FirebaseUser fireUser) {
+    // Setup FireBase connection
+    private void fireBaseSetup() {
+        fireReference = FirebaseDatabase.getInstance().getReference("World").child(fireUser.getUid());
 
+        // Get data once
+        fireReference.addListenerForSingleValueEvent(new ValueEventListener() {
+
+            public void onDataChange(DataSnapshot dataSnapshot) {
+
+                // Get number of hidden avatars
+                hiddenAmount = (int) dataSnapshot.child("Hiding Locations").getChildrenCount();
+                freeAmount = MAX_AVATAR_AMOUNT - hiddenAmount;
+
+                points = (Long) dataSnapshot.child("Points").getValue();
+
+                if (points == null) {
+                    fireReference.child("Points").setValue(0);
+                    points = Long.valueOf("0");
+                }
+
+                updateUI();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.d(TAG, "onCancelled Called");
+            }
+        });
     }
+
+
 }

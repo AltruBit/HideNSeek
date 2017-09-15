@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="hideNSeek">Hide N Seek</string>
-    <string name="userText">User Name</string>
     <string name="userName">User</string>
     <string name="avatar">Avatars</string>
     <string name="free">Free: </string>
@@ -18,5 +16,4 @@
     <string name="numOfAvatar"># of Avatars</string>
     <string name="cont">Continue</string>
     <string name="timerOn">0:00</string>
-    <string name="foundTitle"># found: </string>
 </resources>
